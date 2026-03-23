@@ -6,6 +6,15 @@ const authMiddleware = require('../middleware/authMiddleware');
 const ownerCheckMiddleware = require('../middleware/ownerCheckMiddleware');
 
 const router = express.Router();
+
+const serializeForScriptTag = (value) =>
+  JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+
 router.get('/test-ai', (req, res) => {
   console.log('🧪 Test AI route hit');
   res.json({
@@ -682,7 +691,6 @@ router.post('/:storeId/ai-prompt',
       console.log('🔍 API Key check:', {
         hasApiKey: !!apiKey,
         keyLength: apiKey ? apiKey.length : 0,
-        keyPrefix: apiKey ? apiKey.substring(0, 20) : 'none',
         hasProjectId: !!process.env.OPENAI_PROJECT_ID,
         hasOrgId: !!process.env.OPENAI_ORG_ID
       });
@@ -1177,6 +1185,13 @@ router.get('/:storeId/preview',
       }
 
       // Generate a preview HTML page that can render the React components
+      const serializedStoreData = serializeForScriptTag({
+        name: store.metadata?.siteName || store.storeName,
+        layout: store.layout,
+        theme: store.theme,
+        reactWebsite: store.reactWebsite
+      });
+
       const previewHTML = `
 <!DOCTYPE html>
 <html lang="en">
@@ -1197,18 +1212,14 @@ router.get('/:storeId/preview',
 </head>
 <body>
     <div id="root"></div>
+    <script id="store-data" type="application/json">${serializedStoreData}</script>
     
     <script type="text/babel">
       const { useState, useEffect } = React;
       const { createRoot } = ReactDOM;
       
       // Store data
-      const storeData = ${JSON.stringify({
-        name: store.metadata?.siteName || store.storeName,
-        layout: store.layout,
-        theme: store.theme,
-        reactWebsite: store.reactWebsite
-      }, null, 2)};
+      const storeData = JSON.parse(document.getElementById('store-data').textContent);
       
       // Simple section renderer
       const SectionRenderer = ({ section }) => {

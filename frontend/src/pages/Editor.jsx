@@ -8,6 +8,7 @@ import Canvas from '../components/editor/Canvas';
 import PropertiesPanel from '../components/editor/PropertiesPanel';
 import TopBar from '../components/editor/TopBar';
 import StorePreview from '../components/store/StorePreview';
+import { storeAPI } from '../utils/api';
 
 const Editor = () => {
   const { themeId, storeId } = useParams();
@@ -52,11 +53,7 @@ const Editor = () => {
           return;
         }
 
-        const res = await fetch(`/api/store/${effectiveStoreId}/editor`, {
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` }
-        });
-        if (!res.ok) throw new Error('Failed to fetch editor data');
-        const body = await res.json();
+        const body = await storeAPI.getEditorData(effectiveStoreId);
         const payload = body.data;
         const incomingProducts = Array.isArray(payload.products) ? payload.products : [];
         setProductList(incomingProducts);
@@ -877,13 +874,7 @@ const Editor = () => {
       const storeId = localStorage.getItem('editorStoreId');
       if (!storeId) throw new Error('Missing storeId for save');
 
-      const resp = await fetch(`/api/store/${storeId}/editor-update`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
-        body: JSON.stringify({ layout, theme: { id: themeId }, products: {} })
-      });
-      if (!resp.ok) throw new Error('Save failed');
-      const data = await resp.json();
+      const data = await storeAPI.saveEditorUpdate(storeId, { layout, theme: { id: themeId }, products: {} });
       console.log('Save response', data);
       setIsDirty(false);
       alert('Theme saved successfully!');

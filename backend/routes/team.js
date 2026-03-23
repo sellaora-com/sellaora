@@ -146,8 +146,7 @@ router.post('/invites/accept', auth, async (req, res) => {
     // If the invited email matches the user's email (recommended), or allow any user for dev
     const user = await User.findById(req.user._id);
     if (user.email.toLowerCase() !== invite.email.toLowerCase()) {
-      // Allow but note mismatch in dev usage
-      // return res.status(403).json({ success: false, message: 'This invite was issued to a different email' });
+      return res.status(403).json({ success: false, message: 'This invite was issued to a different email' });
     }
 
     // Create membership if not exists

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { storeAPI } from '../../utils/api';
 
 const PublishButton = ({ storeId, jsonLayout, onPublishSuccess, onPublishError }) => {
   const [isPublishing, setIsPublishing] = useState(false);
@@ -13,23 +14,7 @@ const PublishButton = ({ storeId, jsonLayout, onPublishSuccess, onPublishError }
     
     setIsPublishing(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/store/${storeId}/publish`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          jsonLayout: jsonLayout
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Publishing failed');
-      }
+      const data = await storeAPI.publishStore(storeId, jsonLayout);
       
       setPublishedUrl(data.data.url);
       setShowSuccess(true);

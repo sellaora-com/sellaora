@@ -1,8 +1,34 @@
 const express = require('express');
 const { upload, deleteImages, extractPublicId, verifyCloudinaryConfig } = require('../utils/cloudinary');
 const authMiddleware = require('../middleware/authMiddleware');
+const Product = require('../models/Product');
+const Store = require('../models/Store');
 
 const router = express.Router();
+
+const extractOwnedPublicIds = (images = []) =>
+  (Array.isArray(images) ? images : [])
+    .flatMap((image) => {
+      if (typeof image === 'string') {
+        const extracted = extractPublicId(image);
+        return extracted ? [extracted] : [];
+      }
+
+      if (image && typeof image === 'object') {
+        const ids = [];
+        if (typeof image.publicId === 'string' && image.publicId.trim()) {
+          ids.push(image.publicId.trim());
+        }
+        if (typeof image.url === 'string') {
+          const extracted = extractPublicId(image.url);
+          if (extracted) ids.push(extracted);
+        }
+        return ids;
+      }
+
+      return [];
+    })
+    .filter(Boolean);
 
 const checkCloudinaryConfig = (req, res, next) => {
   if (!verifyCloudinaryConfig()) {
@@ -166,6 +192,32 @@ router.delete('/images', authMiddleware, checkCloudinaryConfig, async (req, res)
       return res.status(400).json({
         success: false,
         message: 'No valid image identifiers provided. Please provide imageUrls or publicIds.'
+      });
+    }
+
+    const ownedStores = await Store.find({ ownerId: req.user._id }, '_id').lean();
+    const ownedStoreIds = ownedStores.map((store) => store._id);
+    if (ownedStoreIds.length === 0) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not own any stores associated with these assets.'
+      });
+    }
+
+    const ownedProducts = await Product.find(
+      { storeId: { $in: ownedStoreIds } },
+      'images'
+    ).lean();
+
+    const allowedPublicIds = new Set(
+      ownedProducts.flatMap((product) => extractOwnedPublicIds(product.images))
+    );
+
+    const unauthorizedIds = idsToDelete.filter((id) => !allowedPublicIds.has(id));
+    if (unauthorizedIds.length > 0) {
+      return res.status(403).json({
+        success: false,
+        message: 'One or more images do not belong to stores you own.'
       });
     }
 

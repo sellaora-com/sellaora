@@ -98,14 +98,18 @@ const extractPublicId = (cloudinaryUrl) => {
   if (!cloudinaryUrl || typeof cloudinaryUrl !== 'string') return null;
   
   try {
-    // Extract public_id from Cloudinary URL
-    // Example: https://res.cloudinary.com/cloud/image/upload/v1234567890/folder/public_id.jpg
-    const matches = cloudinaryUrl.match(/\/([^\/]+)\.(?:jpg|jpeg|png|gif|webp)$/i);
-    if (matches && matches[1]) {
-      const publicId = matches[1].replace(/^v\d+_/, '');
-      return `sellaora/products/${publicId}`;
-    }
-    return null;
+    const url = new URL(cloudinaryUrl);
+    const uploadMarker = '/upload/';
+    const uploadIndex = url.pathname.indexOf(uploadMarker);
+    if (uploadIndex === -1) return null;
+
+    let assetPath = url.pathname.slice(uploadIndex + uploadMarker.length);
+    assetPath = assetPath.replace(/^.*\/v\d+\//, '');
+
+    if (!assetPath) return null;
+
+    const withoutExtension = assetPath.replace(/\.[^/.?#]+$/, '');
+    return withoutExtension || null;
   } catch (error) {
     console.error('Error extracting public_id from URL:', error);
     return null;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiBaseUrl } from '../../utils/api';
 
 // Helpers
 const hexToRgb = (hex) => {
@@ -1220,23 +1221,21 @@ const StorePreview = ({ storeId, theme = {}, layout = {} }) => {
   // Debug logging and error handling
   useEffect(() => {
     console.log('StorePreview mounted:', { storeId, hasTheme: !!theme, hasLayout: !!layout, previewMode });
-    
-    // Log any errors that might be causing white screen
-    window.addEventListener('error', (e) => {
+
+    const handleWindowError = (e) => {
       console.error('Window error in StorePreview:', e.error);
-    });
-    
-    window.addEventListener('unhandledrejection', (e) => {
+    };
+    const handleUnhandledRejection = (e) => {
       console.error('Unhandled promise rejection in StorePreview:', e.reason);
-    });
+    };
+
+    // Log any errors that might be causing white screen
+    window.addEventListener('error', handleWindowError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
     
     return () => {
-      window.removeEventListener('error', (e) => {
-        console.error('Window error in StorePreview:', e.error);
-      });
-      window.removeEventListener('unhandledrejection', (e) => {
-        console.error('Unhandled promise rejection in StorePreview:', e.reason);
-      });
+      window.removeEventListener('error', handleWindowError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
     };
   }, [storeId, theme, layout, previewMode]);
   
@@ -1250,8 +1249,7 @@ const StorePreview = ({ storeId, theme = {}, layout = {} }) => {
   // Generate preview URL for iframe
   const getPreviewUrl = () => {
     if (!storeId) return null;
-    const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
-    return `${baseUrl}/api/store/${storeId}/preview?token=${token}`;
+    return `${getApiBaseUrl()}/store/${storeId}/preview?token=${token}`;
   };
   
   // Handle iframe load events

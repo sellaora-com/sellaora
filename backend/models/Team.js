@@ -34,7 +34,6 @@ const teamSchema = new mongoose.Schema({
   }
 });
 
-teamSchema.index({ slug: 1 }, { unique: true });
 teamSchema.index({ ownerId: 1 });
 
 module.exports = mongoose.model('Team', teamSchema);

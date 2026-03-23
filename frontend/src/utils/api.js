@@ -1,8 +1,8 @@
-const API_BASE_URL = import.meta.env?.VITE_API_URL || 
-                     process.env.REACT_APP_API_URL || 
-                     'http://localhost:3001/api';
+const API_BASE_URL = (import.meta.env?.VITE_API_URL || 'http://localhost:3001/api').replace(/\/+$/, '');
 
 console.log('API Base URL:', API_BASE_URL);
+
+export const getApiBaseUrl = () => API_BASE_URL;
 
 // Helper function to get auth token
 export const getAuthToken = () => {
@@ -155,6 +155,12 @@ export const storeAPI = {
       body: JSON.stringify(payload),
     });
   },
+  publishStore: async (storeId, jsonLayout) => {
+    return makeAuthenticatedRequest(`/store/${storeId}/publish`, {
+      method: 'POST',
+      body: JSON.stringify({ jsonLayout }),
+    });
+  },
 };
 
 // Product API functions
@@ -168,7 +174,7 @@ export const productAPI = {
 
   listByStore: async (storeId, params = {}) => {
     const clean = Object.fromEntries(
-      Object.entries(params).filter(([v]) => v !== undefined && v !== null && v !== '')
+      Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
     );
     const query = new URLSearchParams(clean).toString();
     const qs = query ? `?${query}` : '';

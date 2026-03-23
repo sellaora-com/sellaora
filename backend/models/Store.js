@@ -95,6 +95,5 @@ const storeSchema = new mongoose.Schema({
 
 // Index for faster queries
 storeSchema.index({ ownerId: 1 });
-storeSchema.index({ domain: 1 });
 
 module.exports = mongoose.model('Store', storeSchema);

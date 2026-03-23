@@ -18,9 +18,10 @@ const generateToken = (userId) => {
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password } = req.body;
+    const normalizedEmail = String(email || '').trim().toLowerCase();
 
     // Validation
-    if (!name || !email || !password) {
+    if (!name || !normalizedEmail || !password) {
       return res.status(400).json({
         success: false,
         message: 'Please provide name, email, and password'
@@ -35,7 +36,7 @@ router.post('/register', async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -46,7 +47,7 @@ router.post('/register', async (req, res) => {
     // Create user
     const user = new User({
       name,
-      email,
+      email: normalizedEmail,
       passwordHash: password // Will be hashed by pre-save middleware
     });
 
@@ -75,6 +76,13 @@ router.post('/register', async (req, res) => {
       });
     }
 
+    if (error.code === 11000 && error.keyPattern?.email) {
+      return res.status(400).json({
+        success: false,
+        message: 'User already exists with this email'
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: 'Server error during registration'
@@ -88,9 +96,10 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = String(email || '').trim().toLowerCase();
 
     // Validation
-    if (!email || !password) {
+    if (!normalizedEmail || !password) {
       return res.status(400).json({
         success: false,
         message: 'Please provide email and password'
@@ -98,7 +107,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Check if user exists
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(401).json({
         success: false,

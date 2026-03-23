@@ -1,7 +1,35 @@
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { spawn } = require('child_process');
+
+const runCommand = (command, args, cwd) => new Promise((resolve, reject) => {
+  const child = spawn(command, args, {
+    cwd,
+    stdio: 'pipe'
+  });
+
+  let stdout = '';
+  let stderr = '';
+
+  child.stdout.on('data', (chunk) => {
+    stdout += chunk.toString();
+  });
+
+  child.stderr.on('data', (chunk) => {
+    stderr += chunk.toString();
+  });
+
+  child.on('error', reject);
+  child.on('close', (code) => {
+    if (code === 0) {
+      resolve({ stdout, stderr });
+      return;
+    }
+
+    reject(new Error(stderr || stdout || `${command} ${args.join(' ')} failed with code ${code}`));
+  });
+});
 
 /**
  * Deploys a React build to Vercel using their API
@@ -22,8 +50,8 @@ async function deployToVercel(buildDir, storeName, domain, preferredProjectName,
     // Build the Vite React project first
     console.log('📦 Building Vite project...');
     try {
-      execSync('npm install', { cwd: buildDir, stdio: 'pipe' });
-      execSync('npm run build', { cwd: buildDir, stdio: 'pipe' });
+      await runCommand('npm', ['install'], buildDir);
+      await runCommand('npm', ['run', 'build'], buildDir);
     } catch (buildError) {
       console.error('Build failed:', buildError.message);
       throw new Error('Failed to build Vite project: ' + buildError.message);

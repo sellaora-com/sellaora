@@ -48,7 +48,6 @@ const teamInviteSchema = new mongoose.Schema({
 });
 
 teamInviteSchema.index({ teamId: 1, email: 1 }, { unique: false });
-teamInviteSchema.index({ token: 1 }, { unique: true });
 teamInviteSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0, partialFilterExpression: { acceptedAt: null } });
 
 teamInviteSchema.statics.generateToken = function () {
